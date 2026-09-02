@@ -229,6 +229,21 @@ export async function dispatchToOpenClaw(
                       }
                     }
 
+                    // 工具进度必须绕过正文流式去重，否则流式启动后 verbose 摘要会被丢弃。
+                    if (kind === 'tool') {
+                      await forwardMediaUrls(payload, deliverCtx, deliveredMediaUrls, dlog);
+                      if (text) {
+                        const textOnlyPayload: DeliverPayload = {
+                          ...payload,
+                          mediaUrl: undefined,
+                          mediaUrls: undefined,
+                        };
+                        await deliverReply(textOnlyPayload, info, deliverCtx);
+                        deliveredTexts.add(text);
+                      }
+                      return;
+                    }
+
                     // ── 2. 流式路径：流式已启动且未降级 → 跳过静态发送 ──
                     if (streamingController?.hasStarted && !streamingController.shouldFallbackToStatic) {
                       if (kind !== 'block') await streamingController.finalize();
@@ -241,13 +256,7 @@ export async function dispatchToOpenClaw(
                       return;
                     }
 
-                    // ── 4. tool 媒体：立即转发 ──
-                    if (kind === 'tool') {
-                      await forwardMediaUrls(payload, deliverCtx, deliveredMediaUrls, dlog);
-                      return;
-                    }
-
-                    // ── 5. 默认路径：过滤已发媒体 + 发送 ──
+                    // ── 4. 默认路径：过滤已发媒体 + 发送 ──
                     const filteredPayload = filterDeliveredMedia(payload, deliveredMediaUrls);
                     await deliverReply(filteredPayload, info, deliverCtx);
                     if (text) deliveredTexts.add(text);
