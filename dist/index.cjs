@@ -307,9 +307,9 @@ var init_config = __esm({
   }
 });
 
-// node_modules/ws/lib/constants.js
+// ../../ws/lib/constants.js
 var require_constants = __commonJS({
-  "node_modules/ws/lib/constants.js"(exports2, module2) {
+  "../../ws/lib/constants.js"(exports2, module2) {
     "use strict";
     var BINARY_TYPES = ["nodebuffer", "arraybuffer", "fragments"];
     var hasBlob = typeof Blob !== "undefined";
@@ -330,9 +330,9 @@ var require_constants = __commonJS({
   }
 });
 
-// node_modules/ws/lib/buffer-util.js
+// ../../ws/lib/buffer-util.js
 var require_buffer_util = __commonJS({
-  "node_modules/ws/lib/buffer-util.js"(exports2, module2) {
+  "../../ws/lib/buffer-util.js"(exports2, module2) {
     "use strict";
     var { EMPTY_BUFFER } = require_constants();
     var FastBuffer = Buffer[Symbol.species];
@@ -405,9 +405,9 @@ var require_buffer_util = __commonJS({
   }
 });
 
-// node_modules/ws/lib/limiter.js
+// ../../ws/lib/limiter.js
 var require_limiter = __commonJS({
-  "node_modules/ws/lib/limiter.js"(exports2, module2) {
+  "../../ws/lib/limiter.js"(exports2, module2) {
     "use strict";
     var kDone = /* @__PURE__ */ Symbol("kDone");
     var kRun = /* @__PURE__ */ Symbol("kRun");
@@ -455,9 +455,9 @@ var require_limiter = __commonJS({
   }
 });
 
-// node_modules/ws/lib/permessage-deflate.js
+// ../../ws/lib/permessage-deflate.js
 var require_permessage_deflate = __commonJS({
-  "node_modules/ws/lib/permessage-deflate.js"(exports2, module2) {
+  "../../ws/lib/permessage-deflate.js"(exports2, module2) {
     "use strict";
     var zlib = require("zlib");
     var bufferUtil = require_buffer_util();
@@ -584,7 +584,7 @@ var require_permessage_deflate = __commonJS({
       acceptAsServer(offers) {
         const opts = this._options;
         const accepted = offers.find((params) => {
-          if (opts.serverNoContextTakeover === false && params.server_no_context_takeover || params.server_max_window_bits && (opts.serverMaxWindowBits === false || typeof opts.serverMaxWindowBits === "number" && opts.serverMaxWindowBits > params.server_max_window_bits) || typeof opts.clientMaxWindowBits === "number" && !params.client_max_window_bits) {
+          if (opts.serverNoContextTakeover === false && params.server_no_context_takeover || params.server_max_window_bits && (opts.serverMaxWindowBits === false || typeof opts.serverMaxWindowBits === "number" && opts.serverMaxWindowBits > params.server_max_window_bits) || typeof opts.clientMaxWindowBits === "number" && (typeof params.client_max_window_bits === "number" ? opts.clientMaxWindowBits > params.client_max_window_bits : !params.client_max_window_bits)) {
             return false;
           }
           return true;
@@ -838,9 +838,9 @@ var require_permessage_deflate = __commonJS({
   }
 });
 
-// node_modules/ws/lib/validation.js
+// ../../ws/lib/validation.js
 var require_validation = __commonJS({
-  "node_modules/ws/lib/validation.js"(exports2, module2) {
+  "../../ws/lib/validation.js"(exports2, module2) {
     "use strict";
     var { isUtf8 } = require("buffer");
     var { hasBlob } = require_constants();
@@ -1039,9 +1039,9 @@ var require_validation = __commonJS({
   }
 });
 
-// node_modules/ws/lib/receiver.js
+// ../../ws/lib/receiver.js
 var require_receiver = __commonJS({
-  "node_modules/ws/lib/receiver.js"(exports2, module2) {
+  "../../ws/lib/receiver.js"(exports2, module2) {
     "use strict";
     var { Writable } = require("stream");
     var PerMessageDeflate2 = require_permessage_deflate();
@@ -1104,6 +1104,7 @@ var require_receiver = __commonJS({
         this._opcode = 0;
         this._totalPayloadLength = 0;
         this._messageLength = 0;
+        this._numFragments = 0;
         this._fragments = [];
         this._errored = false;
         this._loop = false;
@@ -1454,23 +1455,23 @@ var require_receiver = __commonJS({
           this.controlMessage(data, cb);
           return;
         }
+        if (this._maxFragments > 0 && ++this._numFragments > this._maxFragments) {
+          const error = this.createError(
+            RangeError,
+            "Too many message fragments",
+            false,
+            1008,
+            "WS_ERR_TOO_MANY_BUFFERED_PARTS"
+          );
+          cb(error);
+          return;
+        }
         if (this._compressed) {
           this._state = INFLATING;
           this.decompress(data, cb);
           return;
         }
         if (data.length) {
-          if (this._maxFragments > 0 && this._fragments.length >= this._maxFragments) {
-            const error = this.createError(
-              RangeError,
-              "Too many message fragments",
-              false,
-              1008,
-              "WS_ERR_TOO_MANY_BUFFERED_PARTS"
-            );
-            cb(error);
-            return;
-          }
           this._messageLength = this._totalPayloadLength;
           this._fragments.push(data);
         }
@@ -1500,17 +1501,6 @@ var require_receiver = __commonJS({
               cb(error);
               return;
             }
-            if (this._maxFragments > 0 && this._fragments.length >= this._maxFragments) {
-              const error = this.createError(
-                RangeError,
-                "Too many message fragments",
-                false,
-                1008,
-                "WS_ERR_TOO_MANY_BUFFERED_PARTS"
-              );
-              cb(error);
-              return;
-            }
             this._fragments.push(buf);
           }
           this.dataMessage(cb);
@@ -1533,6 +1523,7 @@ var require_receiver = __commonJS({
         this._totalPayloadLength = 0;
         this._messageLength = 0;
         this._fragmented = 0;
+        this._numFragments = 0;
         this._fragments = [];
         if (this._opcode === 2) {
           let data;
@@ -1671,9 +1662,9 @@ var require_receiver = __commonJS({
   }
 });
 
-// node_modules/ws/lib/sender.js
+// ../../ws/lib/sender.js
 var require_sender = __commonJS({
-  "node_modules/ws/lib/sender.js"(exports2, module2) {
+  "../../ws/lib/sender.js"(exports2, module2) {
     "use strict";
     var { Duplex } = require("stream");
     var { randomFillSync } = require("crypto");
@@ -2164,9 +2155,9 @@ var require_sender = __commonJS({
   }
 });
 
-// node_modules/ws/lib/event-target.js
+// ../../ws/lib/event-target.js
 var require_event_target = __commonJS({
-  "node_modules/ws/lib/event-target.js"(exports2, module2) {
+  "../../ws/lib/event-target.js"(exports2, module2) {
     "use strict";
     var { kForOnEventAttribute, kListener } = require_constants();
     var kCode = /* @__PURE__ */ Symbol("kCode");
@@ -2393,9 +2384,9 @@ var require_event_target = __commonJS({
   }
 });
 
-// node_modules/ws/lib/extension.js
+// ../../ws/lib/extension.js
 var require_extension = __commonJS({
-  "node_modules/ws/lib/extension.js"(exports2, module2) {
+  "../../ws/lib/extension.js"(exports2, module2) {
     "use strict";
     var { tokenChars } = require_validation();
     function push(dest, name, elem) {
@@ -2546,9 +2537,9 @@ var require_extension = __commonJS({
   }
 });
 
-// node_modules/ws/lib/websocket.js
+// ../../ws/lib/websocket.js
 var require_websocket = __commonJS({
-  "node_modules/ws/lib/websocket.js"(exports2, module2) {
+  "../../ws/lib/websocket.js"(exports2, module2) {
     "use strict";
     var EventEmitter = require("events");
     var https3 = require("https");
@@ -3033,8 +3024,8 @@ var require_websocket = __commonJS({
         autoPong: true,
         closeTimeout: CLOSE_TIMEOUT,
         protocolVersion: protocolVersions[1],
-        maxBufferedChunks: 1024 * 1024,
-        maxFragments: 128 * 1024,
+        maxBufferedChunks: 256 * 1024,
+        maxFragments: 16 * 1024,
         maxPayload: 100 * 1024 * 1024,
         skipUTF8Validation: false,
         perMessageDeflate: true,
@@ -3442,9 +3433,9 @@ var require_websocket = __commonJS({
   }
 });
 
-// node_modules/ws/lib/stream.js
+// ../../ws/lib/stream.js
 var require_stream = __commonJS({
-  "node_modules/ws/lib/stream.js"(exports2, module2) {
+  "../../ws/lib/stream.js"(exports2, module2) {
     "use strict";
     var WebSocket2 = require_websocket();
     var { Duplex } = require("stream");
@@ -3540,9 +3531,9 @@ var require_stream = __commonJS({
   }
 });
 
-// node_modules/ws/lib/subprotocol.js
+// ../../ws/lib/subprotocol.js
 var require_subprotocol = __commonJS({
-  "node_modules/ws/lib/subprotocol.js"(exports2, module2) {
+  "../../ws/lib/subprotocol.js"(exports2, module2) {
     "use strict";
     var { tokenChars } = require_validation();
     function parse(header) {
@@ -3585,9 +3576,9 @@ var require_subprotocol = __commonJS({
   }
 });
 
-// node_modules/ws/lib/websocket-server.js
+// ../../ws/lib/websocket-server.js
 var require_websocket_server = __commonJS({
-  "node_modules/ws/lib/websocket-server.js"(exports2, module2) {
+  "../../ws/lib/websocket-server.js"(exports2, module2) {
     "use strict";
     var EventEmitter = require("events");
     var http2 = require("http");
@@ -3621,9 +3612,9 @@ var require_websocket_server = __commonJS({
        *     called
        * @param {Function} [options.handleProtocols] A hook to handle protocols
        * @param {String} [options.host] The hostname where to bind the server
-       * @param {Number} [options.maxBufferedChunks=1048576] The maximum number of
+       * @param {Number} [options.maxBufferedChunks=262144] The maximum number of
        *     buffered data chunks
-       * @param {Number} [options.maxFragments=131072] The maximum number of message
+       * @param {Number} [options.maxFragments=16384] The maximum number of message
        *     fragments
        * @param {Number} [options.maxPayload=104857600] The maximum allowed message
        *     size
@@ -3646,8 +3637,8 @@ var require_websocket_server = __commonJS({
         options = {
           allowSynchronousEvents: true,
           autoPong: true,
-          maxBufferedChunks: 1024 * 1024,
-          maxFragments: 128 * 1024,
+          maxBufferedChunks: 256 * 1024,
+          maxFragments: 16 * 1024,
           maxPayload: 100 * 1024 * 1024,
           skipUTF8Validation: false,
           perMessageDeflate: false,
@@ -4218,9 +4209,9 @@ var init_setup = __esm({
   }
 });
 
-// node_modules/qrcode-terminal/vendor/QRCode/QRMode.js
+// ../../qrcode-terminal/vendor/QRCode/QRMode.js
 var require_QRMode = __commonJS({
-  "node_modules/qrcode-terminal/vendor/QRCode/QRMode.js"(exports2, module2) {
+  "../../qrcode-terminal/vendor/QRCode/QRMode.js"(exports2, module2) {
     "use strict";
     module2.exports = {
       MODE_NUMBER: 1 << 0,
@@ -4231,9 +4222,9 @@ var require_QRMode = __commonJS({
   }
 });
 
-// node_modules/qrcode-terminal/vendor/QRCode/QR8bitByte.js
+// ../../qrcode-terminal/vendor/QRCode/QR8bitByte.js
 var require_QR8bitByte = __commonJS({
-  "node_modules/qrcode-terminal/vendor/QRCode/QR8bitByte.js"(exports2, module2) {
+  "../../qrcode-terminal/vendor/QRCode/QR8bitByte.js"(exports2, module2) {
     "use strict";
     var QRMode = require_QRMode();
     function QR8bitByte(data) {
@@ -4254,9 +4245,9 @@ var require_QR8bitByte = __commonJS({
   }
 });
 
-// node_modules/qrcode-terminal/vendor/QRCode/QRMath.js
+// ../../qrcode-terminal/vendor/QRCode/QRMath.js
 var require_QRMath = __commonJS({
-  "node_modules/qrcode-terminal/vendor/QRCode/QRMath.js"(exports2, module2) {
+  "../../qrcode-terminal/vendor/QRCode/QRMath.js"(exports2, module2) {
     "use strict";
     var QRMath = {
       glog: function(n) {
@@ -4293,9 +4284,9 @@ var require_QRMath = __commonJS({
   }
 });
 
-// node_modules/qrcode-terminal/vendor/QRCode/QRPolynomial.js
+// ../../qrcode-terminal/vendor/QRCode/QRPolynomial.js
 var require_QRPolynomial = __commonJS({
-  "node_modules/qrcode-terminal/vendor/QRCode/QRPolynomial.js"(exports2, module2) {
+  "../../qrcode-terminal/vendor/QRCode/QRPolynomial.js"(exports2, module2) {
     "use strict";
     var QRMath = require_QRMath();
     function QRPolynomial(num, shift) {
@@ -4346,9 +4337,9 @@ var require_QRPolynomial = __commonJS({
   }
 });
 
-// node_modules/qrcode-terminal/vendor/QRCode/QRMaskPattern.js
+// ../../qrcode-terminal/vendor/QRCode/QRMaskPattern.js
 var require_QRMaskPattern = __commonJS({
-  "node_modules/qrcode-terminal/vendor/QRCode/QRMaskPattern.js"(exports2, module2) {
+  "../../qrcode-terminal/vendor/QRCode/QRMaskPattern.js"(exports2, module2) {
     "use strict";
     module2.exports = {
       PATTERN000: 0,
@@ -4363,9 +4354,9 @@ var require_QRMaskPattern = __commonJS({
   }
 });
 
-// node_modules/qrcode-terminal/vendor/QRCode/QRUtil.js
+// ../../qrcode-terminal/vendor/QRCode/QRUtil.js
 var require_QRUtil = __commonJS({
-  "node_modules/qrcode-terminal/vendor/QRCode/QRUtil.js"(exports2, module2) {
+  "../../qrcode-terminal/vendor/QRCode/QRUtil.js"(exports2, module2) {
     "use strict";
     var QRMode = require_QRMode();
     var QRPolynomial = require_QRPolynomial();
@@ -4588,9 +4579,9 @@ var require_QRUtil = __commonJS({
   }
 });
 
-// node_modules/qrcode-terminal/vendor/QRCode/QRErrorCorrectLevel.js
+// ../../qrcode-terminal/vendor/QRCode/QRErrorCorrectLevel.js
 var require_QRErrorCorrectLevel = __commonJS({
-  "node_modules/qrcode-terminal/vendor/QRCode/QRErrorCorrectLevel.js"(exports2, module2) {
+  "../../qrcode-terminal/vendor/QRCode/QRErrorCorrectLevel.js"(exports2, module2) {
     "use strict";
     module2.exports = {
       L: 1,
@@ -4601,9 +4592,9 @@ var require_QRErrorCorrectLevel = __commonJS({
   }
 });
 
-// node_modules/qrcode-terminal/vendor/QRCode/QRRSBlock.js
+// ../../qrcode-terminal/vendor/QRCode/QRRSBlock.js
 var require_QRRSBlock = __commonJS({
-  "node_modules/qrcode-terminal/vendor/QRCode/QRRSBlock.js"(exports2, module2) {
+  "../../qrcode-terminal/vendor/QRCode/QRRSBlock.js"(exports2, module2) {
     "use strict";
     var QRErrorCorrectLevel = require_QRErrorCorrectLevel();
     function QRRSBlock(totalCount, dataCount) {
@@ -4851,9 +4842,9 @@ var require_QRRSBlock = __commonJS({
   }
 });
 
-// node_modules/qrcode-terminal/vendor/QRCode/QRBitBuffer.js
+// ../../qrcode-terminal/vendor/QRCode/QRBitBuffer.js
 var require_QRBitBuffer = __commonJS({
-  "node_modules/qrcode-terminal/vendor/QRCode/QRBitBuffer.js"(exports2, module2) {
+  "../../qrcode-terminal/vendor/QRCode/QRBitBuffer.js"(exports2, module2) {
     "use strict";
     function QRBitBuffer() {
       this.buffer = [];
@@ -4887,9 +4878,9 @@ var require_QRBitBuffer = __commonJS({
   }
 });
 
-// node_modules/qrcode-terminal/vendor/QRCode/index.js
+// ../../qrcode-terminal/vendor/QRCode/index.js
 var require_QRCode = __commonJS({
-  "node_modules/qrcode-terminal/vendor/QRCode/index.js"(exports2, module2) {
+  "../../qrcode-terminal/vendor/QRCode/index.js"(exports2, module2) {
     "use strict";
     var QR8bitByte = require_QR8bitByte();
     var QRUtil = require_QRUtil();
@@ -5208,9 +5199,9 @@ var require_QRCode = __commonJS({
   }
 });
 
-// node_modules/qrcode-terminal/lib/main.js
+// ../../qrcode-terminal/lib/main.js
 var require_main = __commonJS({
-  "node_modules/qrcode-terminal/lib/main.js"(exports2, module2) {
+  "../../qrcode-terminal/lib/main.js"(exports2, module2) {
     "use strict";
     var QRCode = require_QRCode();
     var QRErrorCorrectLevel = require_QRErrorCorrectLevel();
@@ -5299,7 +5290,7 @@ var require_main = __commonJS({
   }
 });
 
-// node_modules/@tencent-connect/qqbot-connector/dist/esm/qqbot-session.js
+// ../qqbot-connector/dist/esm/qqbot-session.js
 function d(t = "production") {
   return E[t];
 }
@@ -5349,7 +5340,7 @@ function w(t, r = "") {
 }
 var import_node_crypto, import_node_https, E, u;
 var init_qqbot_session = __esm({
-  "node_modules/@tencent-connect/qqbot-connector/dist/esm/qqbot-session.js"() {
+  "../qqbot-connector/dist/esm/qqbot-session.js"() {
     "use strict";
     import_node_crypto = __toESM(require("crypto"), 1);
     import_node_https = __toESM(require("https"), 1);
@@ -5360,7 +5351,7 @@ var init_qqbot_session = __esm({
   }
 });
 
-// node_modules/@tencent-connect/qqbot-connector/dist/esm/qr-connect.js
+// ../qqbot-connector/dist/esm/qr-connect.js
 function F(r) {
   return new Promise((o) => {
     import_qrcode_terminal.default.generate(r, { small: true }, (e) => {
@@ -5440,7 +5431,7 @@ function m2(r) {
 }
 var import_qrcode_terminal, p;
 var init_qr_connect = __esm({
-  "node_modules/@tencent-connect/qqbot-connector/dist/esm/qr-connect.js"() {
+  "../qqbot-connector/dist/esm/qr-connect.js"() {
     "use strict";
     import_qrcode_terminal = __toESM(require_main(), 1);
     init_qqbot_session();
@@ -5448,9 +5439,9 @@ var init_qr_connect = __esm({
   }
 });
 
-// node_modules/@tencent-connect/qqbot-connector/dist/esm/index.js
+// ../qqbot-connector/dist/esm/index.js
 var init_esm = __esm({
-  "node_modules/@tencent-connect/qqbot-connector/dist/esm/index.js"() {
+  "../qqbot-connector/dist/esm/index.js"() {
     "use strict";
     init_qr_connect();
   }
@@ -5623,11 +5614,11 @@ var import_node_os = __toESM(require("os"), 1);
 // src/outbound/outbound-service.ts
 var path3 = __toESM(require("path"), 1);
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/QQBot.js
+// ../qqbot-nodejs/dist/QQBot.js
 var fs3 = __toESM(require("fs"), 1);
 var path = __toESM(require("path"), 1);
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/middleware/types.js
+// ../qqbot-nodejs/dist/middleware/types.js
 function resolvePolicy(ctx, path22, explicit, defaultValue) {
   if (explicit !== void 0 && explicit !== null) {
     return explicit;
@@ -5703,7 +5694,7 @@ function createMiddlewareContext(params) {
   return ctx;
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/types.js
+// ../qqbot-nodejs/dist/protocol/types.js
 var ApiError = class extends Error {
   httpStatus;
   path;
@@ -5736,7 +5727,7 @@ var StreamContentType = {
   MARKDOWN: "markdown"
 };
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/utils/format.js
+// ../qqbot-nodejs/dist/protocol/utils/format.js
 function formatErrorMessage(err) {
   if (err instanceof Error) {
     let formatted = err.message || err.name || "Error";
@@ -5783,7 +5774,7 @@ function formatFileSize(bytes) {
   return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/api/api-client.js
+// ../qqbot-nodejs/dist/protocol/api/api-client.js
 var DEFAULT_BASE_URL = "https://api.sgroup.qq.com";
 var DEFAULT_TIMEOUT_MS = 3e4;
 var FILE_UPLOAD_TIMEOUT_MS = 12e4;
@@ -5878,12 +5869,12 @@ var ApiClient = class {
   }
 };
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/api/media-chunked.js
+// ../qqbot-nodejs/dist/protocol/api/media-chunked.js
 var crypto = __toESM(require("crypto"), 1);
 var fs = __toESM(require("fs"), 1);
 var https = __toESM(require("https"), 1);
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/api/retry.js
+// ../qqbot-nodejs/dist/protocol/api/retry.js
 async function withRetry(fn, policy, persistentPolicy, logger) {
   let lastError = null;
   for (let attempt = 0; attempt <= policy.maxRetries; attempt++) {
@@ -5975,7 +5966,7 @@ function buildPartFinishPersistentPolicy(retryTimeoutMs, retryableCodes = PART_F
 var PART_FINISH_RETRYABLE_CODES = /* @__PURE__ */ new Set([40093001]);
 var UPLOAD_PREPARE_FALLBACK_CODE = 40093002;
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/api/routes.js
+// ../qqbot-nodejs/dist/protocol/api/routes.js
 function messagePath(scope, targetId) {
   return scope === "c2c" ? `/v2/users/${targetId}/messages` : `/v2/groups/${targetId}/messages`;
 }
@@ -6012,7 +6003,7 @@ function getNextMsgSeq(_msgId) {
   return (timePart ^ random) % 65536;
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/api/media-chunked.js
+// ../qqbot-nodejs/dist/protocol/api/media-chunked.js
 var UploadDailyLimitExceededError = class extends Error {
   filePath;
   fileSize;
@@ -6274,10 +6265,10 @@ function sleep2(ms) {
   return new Promise((resolve2) => setTimeout(resolve2, ms));
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/api/media.js
+// ../qqbot-nodejs/dist/protocol/api/media.js
 var fs2 = __toESM(require("fs"), 1);
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/utils/file-utils.js
+// ../qqbot-nodejs/dist/protocol/utils/file-utils.js
 var MAX_UPLOAD_SIZE = 20 * 1024 * 1024;
 var CHUNKED_UPLOAD_MAX_SIZE = 100 * 1024 * 1024;
 var LARGE_FILE_THRESHOLD = 5 * 1024 * 1024;
@@ -6295,7 +6286,7 @@ function sanitizeFileName(name) {
   return cleaned || "file";
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/api/media.js
+// ../qqbot-nodejs/dist/protocol/api/media.js
 var MAX_BASE64_CHECK_SIZE = Math.ceil(MAX_UPLOAD_SIZE * 1.4);
 function formatUploadSize() {
   return formatFileSize(MAX_UPLOAD_SIZE);
@@ -6383,7 +6374,7 @@ var MediaApi = class {
   }
 };
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/api/messages.js
+// ../qqbot-nodejs/dist/protocol/api/messages.js
 var MessageApi = class {
   client;
   tokenManager;
@@ -6571,7 +6562,7 @@ var MessageApi = class {
   }
 };
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/api/token.js
+// ../qqbot-nodejs/dist/protocol/api/token.js
 var DEFAULT_TOKEN_BASE_URL = "https://bots.qq.com";
 var TOKEN_PATH = "/app/getAppAccessToken";
 var DEFAULT_TOKEN_TIMEOUT_MS = 1e4;
@@ -6762,7 +6753,7 @@ var TokenManager = class {
   }
 };
 
-// node_modules/ws/wrapper.mjs
+// ../../ws/wrapper.mjs
 var import_stream = __toESM(require_stream(), 1);
 var import_extension = __toESM(require_extension(), 1);
 var import_permessage_deflate = __toESM(require_permessage_deflate(), 1);
@@ -6773,7 +6764,7 @@ var import_websocket = __toESM(require_websocket(), 1);
 var import_websocket_server = __toESM(require_websocket_server(), 1);
 var wrapper_default = import_websocket.default;
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/gateway/codec.js
+// ../qqbot-nodejs/dist/protocol/gateway/codec.js
 function decodeGatewayMessageData(data) {
   if (typeof data === "string") {
     return data;
@@ -6800,7 +6791,7 @@ function readOptionalMessageSceneExt(event) {
   return scene?.ext;
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/gateway/constants.js
+// ../qqbot-nodejs/dist/protocol/gateway/constants.js
 var INTENTS = {
   GUILDS: 1 << 0,
   GUILD_MEMBERS: 1 << 1,
@@ -6873,7 +6864,7 @@ var GatewayEvent = {
   MESSAGE_REACTION_REMOVE: "MESSAGE_REACTION_REMOVE"
 };
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/gateway/event-dispatcher.js
+// ../qqbot-nodejs/dist/protocol/gateway/event-dispatcher.js
 var REF_INDEX_KEY = "msg_idx";
 function parseRefIndices(ext, msgType, msgElements) {
   let refMsgIdx;
@@ -7014,7 +7005,7 @@ function dispatchEvent(eventType, data, _accountId, _log) {
   return { action: "raw", type: eventType, data };
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/gateway/reconnect.js
+// ../qqbot-nodejs/dist/protocol/gateway/reconnect.js
 var ReconnectState = class {
   accountId;
   log;
@@ -7125,7 +7116,7 @@ var ReconnectState = class {
   }
 };
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/gateway/gateway-connection.js
+// ../qqbot-nodejs/dist/protocol/gateway/gateway-connection.js
 var GatewayConnection = class {
   isAborted = false;
   currentWs = null;
@@ -7383,7 +7374,7 @@ function previewPayload(data) {
   }
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/transport/webhook-verify.js
+// ../qqbot-nodejs/dist/protocol/transport/webhook-verify.js
 var crypto2 = __toESM(require("crypto"), 1);
 function deriveSeed(botSecret) {
   let seed = botSecret;
@@ -7435,7 +7426,7 @@ function signValidationResponse(params) {
   };
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/transport/webhook-server-node.js
+// ../qqbot-nodejs/dist/protocol/transport/webhook-server-node.js
 var http = __toESM(require("http"), 1);
 var NodeHttpWebhookServer = class {
   server = null;
@@ -7483,7 +7474,7 @@ var NodeHttpWebhookServer = class {
   }
 };
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/transport/webhook.js
+// ../qqbot-nodejs/dist/protocol/transport/webhook.js
 var OP_DISPATCH = 0;
 var OP_HTTP_CALLBACK_ACK = 12;
 var OP_VALIDATION = 13;
@@ -7627,7 +7618,7 @@ function getHeader(headers, key) {
   return val;
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/utils/upload-cache.js
+// ../qqbot-nodejs/dist/protocol/utils/upload-cache.js
 var crypto3 = __toESM(require("crypto"), 1);
 var MAX_CACHE_SIZE = 500;
 function computeFileHash(data) {
@@ -7692,7 +7683,7 @@ var UploadCache = class {
   }
 };
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/streaming.js
+// ../qqbot-nodejs/dist/streaming.js
 var DEFAULT_THROTTLE_MS = 500;
 var MIN_THROTTLE_MS = 300;
 var MAX_FLUSH_RETRIES = 3;
@@ -7860,7 +7851,7 @@ var StreamSession = class {
   }
 };
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/QQBot.js
+// ../qqbot-nodejs/dist/QQBot.js
 var MsgType = {
   /** Plain text. */
   TEXT: 0,
@@ -8548,7 +8539,7 @@ var QQBot = class {
   }
 };
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/middleware/message-filter.js
+// ../qqbot-nodejs/dist/middleware/message-filter.js
 function messageFilter(options = {}) {
   const skipSelfEcho = options.skipSelfEcho ?? true;
   const dedupOpts = options.dedup !== false ? { windowMs: 5e3, maxSize: 1e3, ...options.dedup ?? {} } : null;
@@ -8586,7 +8577,7 @@ function messageFilter(options = {}) {
   };
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/middleware/content-sanitizer.js
+// ../qqbot-nodejs/dist/middleware/content-sanitizer.js
 function contentSanitizer(options = {}) {
   const { stripBotMention = true, stripAllMentions = false, collapseWhitespace = false, parseFaceTags: parseFaceTags2 = false, transform } = options;
   return async (ctx, next) => {
@@ -8681,7 +8672,7 @@ function faceToEmoji(id) {
   return map[id];
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/middleware/rate-limiter.js
+// ../qqbot-nodejs/dist/middleware/rate-limiter.js
 var SlidingWindow = class {
   buckets = /* @__PURE__ */ new Map();
   max;
@@ -8735,7 +8726,7 @@ function rateLimiter(options = {}) {
   };
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/middleware/concurrency-guard.js
+// ../qqbot-nodejs/dist/middleware/concurrency-guard.js
 function concurrencyGuard(options = {}) {
   const strategy = options.strategy ?? "queue";
   const maxQueue = options.maxQueue ?? 3;
@@ -8755,12 +8746,12 @@ function concurrencyGuard(options = {}) {
       locks.delete(key);
     }
   }
-  function targetKey(ctx) {
+  function targetKey2(ctx) {
     const t = ctx.message.replyTarget;
     return `${t.scope}:${t.targetId}`;
   }
   const guard = async (ctx, next) => {
-    const key = targetKey(ctx);
+    const key = targetKey2(ctx);
     const state = getState(key);
     if (!state.busy) {
       state.busy = true;
@@ -8970,7 +8961,7 @@ function concurrencyGuard(options = {}) {
   return guard;
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/middleware/mention-gate.js
+// ../qqbot-nodejs/dist/middleware/mention-gate.js
 function detectMentionInContent(content, appId) {
   if (!content || !appId)
     return false;
@@ -9026,7 +9017,7 @@ function mentionGate(options = {}) {
   };
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/middleware/quote-ref.js
+// ../qqbot-nodejs/dist/middleware/quote-ref.js
 var MemoryRefIndexStore = class {
   map = /* @__PURE__ */ new Map();
   maxSize;
@@ -9144,7 +9135,7 @@ function buildText(content, attachments) {
   return parts.join("\n") || "[empty message]";
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/middleware/envelope-formatter.js
+// ../qqbot-nodejs/dist/middleware/envelope-formatter.js
 function envelopeFormatter(options = {}) {
   const { historyLimit = 5, includeQuote = true, includeSender = true, format } = options;
   return async (ctx, next) => {
@@ -9216,7 +9207,7 @@ ${parts.join("\n")}
   return sections.join("\n\n");
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/middleware/slash-command.js
+// ../qqbot-nodejs/dist/middleware/slash-command.js
 function slashCommand(options = {}) {
   const prefixes = options.prefixes ?? ["/"];
   const catchErrors = options.catchErrors ?? true;
@@ -9369,7 +9360,7 @@ async function sendCommandResult(ctx, result) {
   }
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/middleware/history-buffer.js
+// ../qqbot-nodejs/dist/middleware/history-buffer.js
 var MemoryHistoryStore = class {
   buffers = /* @__PURE__ */ new Map();
   append(groupKey, entry, limit) {
@@ -9434,7 +9425,7 @@ function historyBuffer(options = {}) {
   return m3;
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/middleware/typing-indicator.js
+// ../qqbot-nodejs/dist/middleware/typing-indicator.js
 var DEFAULT_DURATION_SEC = 60;
 var DEFAULT_KEEPALIVE_INTERVAL_MS = 5e4;
 function typingIndicator(options = {}) {
@@ -9471,7 +9462,7 @@ function typingIndicator(options = {}) {
   };
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/middleware/error-handler.js
+// ../qqbot-nodejs/dist/middleware/error-handler.js
 var DEFAULT_FORMAT = (err) => {
   if (err instanceof ApiError) {
     if (err.bizMessage)
@@ -9509,7 +9500,7 @@ function errorHandler(options = {}) {
   };
 }
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/storage/kv-store.js
+// ../qqbot-nodejs/dist/storage/kv-store.js
 var import_node_fs = __toESM(require("fs"), 1);
 var import_node_path = __toESM(require("path"), 1);
 var FileKVStore = class {
@@ -9619,7 +9610,7 @@ var FileKVStore = class {
   }
 };
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/storage/session-adapter.js
+// ../qqbot-nodejs/dist/storage/session-adapter.js
 function kvSessionPersistence(opts) {
   const prefix = opts.prefix ?? "qqbot:session:";
   const key = `${prefix}${opts.accountId}`;
@@ -11824,10 +11815,10 @@ function buildCommandList(account, opts) {
 // src/middleware/attachment.ts
 var path17 = __toESM(require("path"), 1);
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/utils/reply-limiter.js
+// ../qqbot-nodejs/dist/protocol/utils/reply-limiter.js
 var DEFAULT_TTL_MS = 60 * 60 * 1e3;
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/utils/media-tags.js
+// ../qqbot-nodejs/dist/protocol/utils/media-tags.js
 var VALID_TAGS = ["qqimg", "qqvoice", "qqvideo", "qqfile", "qqmedia"];
 var TAG_ALIASES = {
   qq_img: "qqimg",
@@ -11876,30 +11867,30 @@ var SELF_CLOSING_TAG_REGEX = new RegExp("`?" + LEFT_BRACKET + "\\s*(" + TAG_NAME
 var FUZZY_MEDIA_TAG_REGEX = new RegExp("`?" + LEFT_BRACKET + "\\s*(" + TAG_NAME_PATTERN + ")\\s*" + RIGHT_BRACKET + `["']?\\s*([^<\uFF1C<\uFF1E>"'\`]+?)\\s*["']?` + LEFT_BRACKET + "\\s*/?\\s*(?:" + TAG_NAME_PATTERN + ")\\s*" + RIGHT_BRACKET + "`?", "gi");
 var MULTILINE_TAG_CLEANUP = new RegExp("(" + LEFT_BRACKET + "\\s*(?:" + TAG_NAME_PATTERN + ")\\s*" + RIGHT_BRACKET + ")([\\s\\S]*?)(" + LEFT_BRACKET + "\\s*/?\\s*(?:" + TAG_NAME_PATTERN + ")\\s*" + RIGHT_BRACKET + ")", "gi");
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/utils/ref-index-store.js
+// ../qqbot-nodejs/dist/protocol/utils/ref-index-store.js
 var import_node_fs6 = __toESM(require("fs"), 1);
 var DEFAULT_TTL_MS2 = 7 * 24 * 60 * 60 * 1e3;
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/utils/session-store.js
+// ../qqbot-nodejs/dist/protocol/utils/session-store.js
 var import_node_fs7 = __toESM(require("fs"), 1);
 var import_node_path7 = __toESM(require("path"), 1);
 var DEFAULT_EXPIRE_MS = 5 * 60 * 1e3;
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/utils/text-parsing.js
+// ../qqbot-nodejs/dist/protocol/utils/text-parsing.js
 var MAX_FACE_EXT_BYTES = 64 * 1024;
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/utils/media-source.js
+// ../qqbot-nodejs/dist/protocol/utils/media-source.js
 var fs14 = __toESM(require("fs"), 1);
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/utils/image-size.js
+// ../qqbot-nodejs/dist/protocol/utils/image-size.js
 var import_node_buffer = require("buffer");
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/utils/ffmpeg.js
+// ../qqbot-nodejs/dist/protocol/utils/ffmpeg.js
 var import_node_child_process = require("child_process");
 var fs15 = __toESM(require("fs"), 1);
 var path13 = __toESM(require("path"), 1);
 
-// node_modules/@tencent-connect/qqbot-nodejs/dist/protocol/utils/audio.js
+// ../qqbot-nodejs/dist/protocol/utils/audio.js
 var import_node_child_process2 = require("child_process");
 var fs16 = __toESM(require("fs"), 1);
 var path14 = __toESM(require("path"), 1);
@@ -12727,6 +12718,102 @@ function stripMentionText(text, mentions) {
   return cleaned;
 }
 
+// src/features/question-response.ts
+var import_question_gateway_runtime = require("openclaw/plugin-sdk/question-gateway-runtime");
+var QUESTION_TARGET_TTL_MS = 24 * 60 * 60 * 1e3;
+var STAGED_QUESTION_TTL_MS = 5 * 60 * 1e3;
+var pendingTargets = /* @__PURE__ */ new Map();
+var stagedQuestions = /* @__PURE__ */ new Map();
+function targetKey(accountId, scope, targetId) {
+  return `${accountId}:${scope}:${targetId}`;
+}
+function hasPendingQuestionTarget(params) {
+  return pendingTargets.has(targetKey(params.accountId, params.scope, params.targetId));
+}
+function stagedKey(accountId, text) {
+  return `${accountId}:${text.trim()}`;
+}
+function stagePendingQuestionPayload(params) {
+  const questionId = import_question_gateway_runtime.questionGatewayRuntime.readAskUserQuestionId(params.payload);
+  if (!questionId) return false;
+  const key = stagedKey(params.accountId, params.text);
+  const now = Date.now();
+  const queue = (stagedQuestions.get(key) ?? []).filter((entry) => entry.expiresAtMs > now);
+  if (!queue.some((entry) => entry.questionId === questionId)) {
+    queue.push({ questionId, expiresAtMs: now + STAGED_QUESTION_TTL_MS });
+  }
+  stagedQuestions.set(key, queue);
+  return true;
+}
+function takeStagedQuestionId(accountId, text) {
+  const key = stagedKey(accountId, text);
+  const now = Date.now();
+  const queue = (stagedQuestions.get(key) ?? []).filter((entry2) => entry2.expiresAtMs > now);
+  const entry = queue.shift();
+  if (queue.length > 0) stagedQuestions.set(key, queue);
+  else stagedQuestions.delete(key);
+  return entry?.questionId;
+}
+function registerPendingQuestionTarget(params) {
+  const payloadQuestionId = params.payload ? import_question_gateway_runtime.questionGatewayRuntime.readAskUserQuestionId(params.payload) : void 0;
+  const stagedQuestionId = params.text ? takeStagedQuestionId(params.accountId, params.text) : void 0;
+  const questionId = payloadQuestionId ?? stagedQuestionId;
+  if (!questionId) return false;
+  const key = targetKey(params.accountId, params.scope, params.targetId);
+  const existing = pendingTargets.get(key);
+  if (existing?.questionId === questionId) return true;
+  if (existing) clearTimeout(existing.cleanupTimer);
+  const target = {
+    questionId,
+    resolving: false,
+    cleanupTimer: setTimeout(() => {
+      if (pendingTargets.get(key) === target) pendingTargets.delete(key);
+    }, QUESTION_TARGET_TTL_MS)
+  };
+  target.cleanupTimer.unref?.();
+  pendingTargets.set(key, target);
+  import_question_gateway_runtime.questionGatewayRuntime.registerChannelDelivery({
+    questionId,
+    deliveryId: `qqbot-plain-reply:${key}:${questionId}`,
+    finalize: () => {
+      if (pendingTargets.get(key) !== target) return;
+      clearTimeout(target.cleanupTimer);
+      pendingTargets.delete(key);
+    }
+  });
+  params.log?.info(`registered QQ plain-text answer target id=${questionId}`);
+  return true;
+}
+async function resolvePendingQuestionTarget(params) {
+  const key = targetKey(params.accountId, params.scope, params.targetId);
+  const target = pendingTargets.get(key);
+  const answer = params.text.trim();
+  if (!target || target.resolving || !answer) return false;
+  target.resolving = true;
+  try {
+    const numericChoice = /^[1-9]\d*$/.test(answer) ? Number(answer) - 1 : void 0;
+    const result = await import_question_gateway_runtime.questionGatewayRuntime.resolveOption({
+      cfg: params.cfg,
+      questionId: target.questionId,
+      senderId: params.senderId,
+      clientDisplayName: `QQ Bot question (${params.senderId})`,
+      ...numericChoice === void 0 ? { optionValue: answer } : { optionIndex: numericChoice }
+    });
+    if (result.status === "answered" || result.status === "already-terminal") {
+      clearTimeout(target.cleanupTimer);
+      if (pendingTargets.get(key) === target) pendingTargets.delete(key);
+      params.log?.info(`resolved QQ plain-text answer id=${target.questionId} status=${result.status}`);
+      return true;
+    }
+    target.resolving = false;
+    return false;
+  } catch (error) {
+    target.resolving = false;
+    params.log?.warn(`failed to resolve QQ answer id=${target.questionId}: ${String(error)}`);
+    return false;
+  }
+}
+
 // src/gateway/middleware-setup.ts
 function setupMiddlewares(bot, account, opts) {
   bot.use(errorHandler());
@@ -12756,9 +12843,15 @@ function setupMiddlewares(bot, account, opts) {
     strategy: "merge",
     maxQueue: 50,
     maxProcessingMs: account.processingTimeoutMs,
-    /** 紧急指令（/stop）跳过排队，立即处理 */
+    /** 紧急指令和 ask_user 回答跳过排队，立即处理 */
     urgentPredicate: (ctx) => {
-      return (ctx.message.content ?? "").trim() === "/stop";
+      if ((ctx.message.content ?? "").trim() === "/stop") return true;
+      const target = ctx.message.replyTarget;
+      return hasPendingQuestionTarget({
+        accountId: account.accountId,
+        scope: target.scope,
+        targetId: target.targetId
+      });
     },
     onMerge: (buffered) => {
       const last = buffered[buffered.length - 1];
@@ -13334,6 +13427,15 @@ async function dispatchToOpenClaw(ctx, msg, account, runtime2, log4) {
   }
   const deliveredMediaUrls = /* @__PURE__ */ new Set();
   const deliveredTexts = /* @__PURE__ */ new Set();
+  const trackQuestionPayload = (payload) => {
+    registerPendingQuestionTarget({
+      payload,
+      accountId: account.accountId,
+      scope: msg.replyTarget.scope,
+      targetId: msg.replyTarget.targetId,
+      log: dlog
+    });
+  };
   if (!adapters.inboundRun) {
     if (adapters.recordInboundSession) {
       try {
@@ -13350,6 +13452,7 @@ async function dispatchToOpenClaw(ctx, msg, account, runtime2, log4) {
       cfg,
       dispatcherOptions: {
         deliver: async (payload, info) => {
+          trackQuestionPayload(payload);
           const text = payload.text?.trim() ?? "";
           if (!payload.mediaUrl && !payload.mediaUrls?.length && text && (deliveredTexts.has(text) || streamingController?.hasStarted && !streamingController?.shouldFallbackToStatic)) {
             return;
@@ -13417,6 +13520,7 @@ async function dispatchToOpenClaw(ctx, msg, account, runtime2, log4) {
               dispatcherOptions: {
                 deliver: async (payload, info) => {
                   try {
+                    trackQuestionPayload(payload);
                     const kind = info?.kind;
                     const text = payload.text?.trim() ?? "";
                     const hasMedia = !!(payload.mediaUrl || payload.mediaUrls?.length);
@@ -13428,16 +13532,25 @@ async function dispatchToOpenClaw(ctx, msg, account, runtime2, log4) {
                         await forwardMediaUrls(payload, deliverCtx, deliveredMediaUrls, dlog);
                       }
                     }
+                    if (kind === "tool") {
+                      await forwardMediaUrls(payload, deliverCtx, deliveredMediaUrls, dlog);
+                      if (text) {
+                        const textOnlyPayload = {
+                          ...payload,
+                          mediaUrl: void 0,
+                          mediaUrls: void 0
+                        };
+                        await deliverReply(textOnlyPayload, info, deliverCtx);
+                        deliveredTexts.add(text);
+                      }
+                      return;
+                    }
                     if (streamingController?.hasStarted && !streamingController.shouldFallbackToStatic) {
                       if (kind !== "block") await streamingController.finalize();
                       if (!streamingController.shouldFallbackToStatic) return;
                       dlog?.warn(`streaming fallback to static`);
                     }
                     if (kind === "final" && !hasMedia && text && deliveredTexts.has(text)) {
-                      return;
-                    }
-                    if (kind === "tool") {
-                      await forwardMediaUrls(payload, deliverCtx, deliveredMediaUrls, dlog);
                       return;
                     }
                     const filteredPayload = filterDeliveredMedia(payload, deliveredMediaUrls);
@@ -13965,6 +14078,20 @@ async function handleMessage(ctx, msg, account, runtime2, log4) {
       nickname: msg.senderName,
       lastInteractionAt: Date.now()
     });
+    const cfg = getAdapters(runtime2).getConfig?.() ?? {};
+    const answeredQuestion = await resolvePendingQuestionTarget({
+      accountId: account.accountId,
+      scope,
+      targetId: msg.replyTarget.targetId,
+      text: ctx.message.content ?? msg.content ?? "",
+      cfg,
+      senderId: msg.senderId,
+      log: hlog
+    });
+    if (answeredQuestion) {
+      hlog.info(`claimed QQ answer msgId=${msg.messageId}`);
+      return;
+    }
     await runWithRequestContext(
       {
         accountId: account.accountId,
@@ -14958,7 +15085,15 @@ var qqbotPlugin = {
   // ── 出站 ──
   outbound: {
     deliveryMode: "direct",
-    sanitizeText: ({ text }) => sanitizeQQBotText(text),
+    sanitizeText: ({ text, payload, accountId }) => {
+      const sanitized = sanitizeQQBotText(text);
+      stagePendingQuestionPayload({
+        payload,
+        accountId: accountId ?? DEFAULT_ACCOUNT_ID,
+        text: sanitized
+      });
+      return sanitized;
+    },
     chunker: (text, limit) => {
       const adapters = getAdapters(getQQBotRuntime());
       if (adapters.chunkMarkdownText) return adapters.chunkMarkdownText(text, limit);
@@ -15001,12 +15136,22 @@ ${line}` : line;
     chunkerMode: "markdown",
     textChunkLimit: TEXT_CHUNK_LIMIT2,
     shouldSuppressLocalPayloadPrompt: ({ payload }) => isApprovalPayload(payload),
-    sendText: async ({ to, text, accountId, replyToId, cfg }) => {
+    sendText: async (sendCtx) => {
+      const { to, text, accountId, replyToId, cfg, payload } = sendCtx;
       const account = resolveQQBotAccount(cfg, accountId ?? void 0);
       const outLog = createOutLog(account.accountId);
       outLog.debug(`sendText to=${to} len=${text.length} replyTo=${replyToId ?? "-"}`);
       const result = await sendText({ to, text, accountId, replyToId, account });
       if (result.error) throw new Error(result.error);
+      const target = parseTarget(to);
+      registerPendingQuestionTarget({
+        payload,
+        text,
+        accountId: account.accountId,
+        scope: target.scope,
+        targetId: target.targetId,
+        log: outLog
+      });
       return { channel: "qqbot", messageId: result.messageId ?? "" };
     },
     sendMedia: async ({ to, text, mediaUrl, accountId, replyToId, cfg }) => {

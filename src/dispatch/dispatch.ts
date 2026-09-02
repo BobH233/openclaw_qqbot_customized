@@ -24,6 +24,7 @@ import { DeliverDebouncer } from '../outbound/debounce.js';
 import { StreamingController, shouldUseStreaming } from '../outbound/streaming-controller.js';
 import { getAdapters } from '../adapter/resolve.js';
 import { clearGroupHistory } from '../features/history-store.js';
+import { registerPendingQuestionTarget } from '../features/question-response.js';
 
 
 /**
@@ -120,6 +121,15 @@ export async function dispatchToOpenClaw(
 
   const deliveredMediaUrls = new Set<string>();
   const deliveredTexts = new Set<string>();
+  const trackQuestionPayload = (payload: DeliverPayload): void => {
+    registerPendingQuestionTarget({
+      payload,
+      accountId: account.accountId,
+      scope: msg.replyTarget.scope,
+      targetId: msg.replyTarget.targetId,
+      log: dlog,
+    });
+  };
 
   if (!adapters.inboundRun) {
     // 低版本：手动 session + dispatchReply 直调
@@ -137,6 +147,7 @@ export async function dispatchToOpenClaw(
       cfg,
       dispatcherOptions: {
         deliver: async (payload: DeliverPayload, info?: DeliverInfo) => {
+          trackQuestionPayload(payload);
           const text = payload.text?.trim() ?? '';
           // 低版本无 block/final 协议，流式启动后 final 仍需跳过（降级除外）
           if (!payload.mediaUrl && !payload.mediaUrls?.length
@@ -215,6 +226,7 @@ export async function dispatchToOpenClaw(
               dispatcherOptions: {
                 deliver: async (payload: DeliverPayload, info?: DeliverInfo) => {
                   try {
+                    trackQuestionPayload(payload);
                     const kind = (info as any)?.kind as string | undefined;
                     const text = payload.text?.trim() ?? '';
                     const hasMedia = !!(payload.mediaUrl || payload.mediaUrls?.length);

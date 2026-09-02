@@ -30,13 +30,14 @@ import { sendMedia } from './outbound/media-send.js';
 import type { PluginLogger } from './utils/plugin-logger.js';
 import { qqbotSetupWizard } from './setup/surface.js';
 import { qqbotLogin, startQrLogin, waitQrLogin } from './setup/login.js';
-import { normalizeTarget, isQQBotTarget } from './outbound/target.js';
+import { normalizeTarget, isQQBotTarget, parseTarget } from './outbound/target.js';
 import { sanitizeQQBotText } from './outbound/sanitize.js';
 import { startAccountWithCredentialRecovery, logoutAndClearCredentials, stopAccountGracefully } from './gateway/lifecycle.js';
 import { loadCredentialBackup } from './features/credential-backup.js';
 import { isApprovalPayload, approvalStubs } from './features/approval-utils.js';
 import { qqbotOnboardingAdapter } from './features/onboarding.js';
 import { stripMentionText } from './utils/mention.js';
+import { registerPendingQuestionTarget, stagePendingQuestionPayload } from './features/question-response.js';
 
 /** QQ Bot 单条消息文本长度上限 */
 export const TEXT_CHUNK_LIMIT = 5000;
@@ -181,7 +182,15 @@ export const qqbotPlugin: ChannelPlugin<ResolvedQQBotAccount> = {
   // ── 出站 ──
   outbound: {
     deliveryMode: 'direct' as const,
-    sanitizeText: ({ text }: { text: string; payload: any }) => sanitizeQQBotText(text),
+    sanitizeText: ({ text, payload, accountId }: { text: string; payload: any; accountId?: string | null }) => {
+      const sanitized = sanitizeQQBotText(text);
+      stagePendingQuestionPayload({
+        payload,
+        accountId: accountId ?? DEFAULT_ACCOUNT_ID,
+        text: sanitized,
+      });
+      return sanitized;
+    },
     chunker: (text, limit) => {
       const adapters = getAdapters(getQQBotRuntime());
       if (adapters.chunkMarkdownText) return adapters.chunkMarkdownText(text, limit);
@@ -229,12 +238,22 @@ export const qqbotPlugin: ChannelPlugin<ResolvedQQBotAccount> = {
     chunkerMode: 'markdown',
     textChunkLimit: TEXT_CHUNK_LIMIT,
     shouldSuppressLocalPayloadPrompt: ({ payload }: any) => isApprovalPayload(payload),
-    sendText: async ({ to, text, accountId, replyToId, cfg }) => {
+    sendText: async (sendCtx: any) => {
+      const { to, text, accountId, replyToId, cfg, payload } = sendCtx;
       const account = resolveQQBotAccount(cfg, accountId ?? undefined);
       const outLog = createOutLog(account.accountId);
       outLog.debug(`sendText to=${to} len=${text.length} replyTo=${replyToId ?? '-'}`);
       const result = await sendText({ to, text, accountId, replyToId, account });
       if (result.error) throw new Error(result.error);
+      const target = parseTarget(to);
+      registerPendingQuestionTarget({
+        payload,
+        text,
+        accountId: account.accountId,
+        scope: target.scope,
+        targetId: target.targetId,
+        log: outLog,
+      });
       return { channel: 'qqbot' as const, messageId: result.messageId ?? '' };
     },
     sendMedia: async ({ to, text, mediaUrl, accountId, replyToId, cfg }) => {

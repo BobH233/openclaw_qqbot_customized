@@ -19,6 +19,7 @@ import { getAdapters } from '../adapter/resolve.js';
 import { resolveGroupConfigFromAccount, resolveGroupPolicy, resolveMentionPatterns } from '../config.js';
 import { getPackageVersion } from '../utils/pkg-version.js';
 import { getOpenClawVersion } from '../bot-instance.js';
+import { resolvePendingQuestionTarget } from '../features/question-response.js';
 
 export async function handleMessage(
   ctx: MiddlewareContext,
@@ -50,6 +51,21 @@ export async function handleMessage(
       nickname: msg.senderName,
       lastInteractionAt: Date.now(),
     });
+
+    const cfg = getAdapters(runtime).getConfig?.() ?? {};
+    const answeredQuestion = await resolvePendingQuestionTarget({
+      accountId: account.accountId,
+      scope,
+      targetId: msg.replyTarget.targetId,
+      text: ctx.message.content ?? msg.content ?? '',
+      cfg,
+      senderId: msg.senderId,
+      log: hlog,
+    });
+    if (answeredQuestion) {
+      hlog.info(`claimed QQ answer msgId=${msg.messageId}`);
+      return;
+    }
 
     await runWithRequestContext(
       {

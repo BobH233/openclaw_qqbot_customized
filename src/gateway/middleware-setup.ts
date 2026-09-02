@@ -28,6 +28,7 @@ import { createPolicyInjector } from '../middleware/policy-injector.js';
 import { getHistoryStore, historyGroupKey } from '../features/history-store.js';
 import { dynamicAccessControl } from '../middleware/access-control.js';
 import { stripMentionText } from '../utils/mention.js';
+import { hasPendingQuestionTarget } from '../features/question-response.js';
 
 export interface MiddlewareSetupOptions {
   /** 获取 runtime */
@@ -93,9 +94,15 @@ export function setupMiddlewares(bot: QQBot, account: ResolvedQQBotAccount, opts
     strategy: 'merge',
     maxQueue: 50,
     maxProcessingMs: account.processingTimeoutMs,
-    /** 紧急指令（/stop）跳过排队，立即处理 */
+    /** 紧急指令和 ask_user 回答跳过排队，立即处理 */
     urgentPredicate: (ctx: MiddlewareContext) => {
-      return (ctx.message.content as string ?? '').trim() === '/stop';
+      if ((ctx.message.content as string ?? '').trim() === '/stop') return true;
+      const target = ctx.message.replyTarget;
+      return hasPendingQuestionTarget({
+        accountId: account.accountId,
+        scope: target.scope,
+        targetId: target.targetId,
+      });
     },
     onMerge: (buffered) => {
       const last = buffered[buffered.length - 1];

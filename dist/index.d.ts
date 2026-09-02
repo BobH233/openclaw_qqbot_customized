@@ -12,16 +12,6 @@ export { StreamingController, shouldUseStreaming } from './src/outbound/streamin
 export * from './src/types.js';
 export * from './src/config.js';
 
-/**
- * @tencent-connect/openclaw-qqbot
- *
- * 独立版 QQ Bot 通道插件 — 基于 @tencent-connect/qqbot-nodejs SDK 重构。
- *
- * 直接依赖：
- * - openclaw/plugin-sdk：OpenClaw 插件框架
- * - @tencent-connect/qqbot-nodejs：QQ 开放平台 Node.js SDK
- */
-
 declare const plugin: {
     id: string;
     name: string;
