@@ -26,6 +26,14 @@ message queue and resolve the pending choice through OpenClaw's question gateway
 Both one-based numeric choices such as `2` and text option values are supported.
 If resolution fails, the message falls back to the normal inbound path.
 
+### Same-turn steering from QQ direct messages
+
+QQ direct messages now bypass the plugin's per-target merge buffer while a task
+is active. This lets the message reach OpenClaw's core queue immediately, where
+the configured `steer`, `followup`, or `interrupt` mode can handle it. Group
+messages keep the plugin's serial merge protection to avoid concurrent QQ
+streaming conflicts.
+
 ## Verification
 
 - A live QQ direct-message test resolved numeric choice `2`.

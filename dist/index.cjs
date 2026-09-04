@@ -12843,10 +12843,11 @@ function setupMiddlewares(bot, account, opts) {
     strategy: "merge",
     maxQueue: 50,
     maxProcessingMs: account.processingTimeoutMs,
-    /** 紧急指令和 ask_user 回答跳过排队，立即处理 */
+    /** 私聊消息、紧急指令和 ask_user 回答跳过插件队列，立即交给 OpenClaw */
     urgentPredicate: (ctx) => {
       if ((ctx.message.content ?? "").trim() === "/stop") return true;
       const target = ctx.message.replyTarget;
+      if (target.scope === "c2c") return true;
       return hasPendingQuestionTarget({
         accountId: account.accountId,
         scope: target.scope,

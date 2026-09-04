@@ -85,7 +85,8 @@ export function setupMiddlewares(bot: QQBot, account: ResolvedQQBotAccount, opts
   bot.use(slash.middleware);
 
   // 10. 并发串行+合并（在副作用中间件之前）
-  //     - 同 peer 串行处理，避免平台 session conflict
+  //     - 群聊同 peer 串行处理，避免平台 session conflict
+  //     - 私聊忙碌时立即下沉，让 OpenClaw 核心 queue mode 处理 steer/followup/interrupt
   //     - 处理中消息暂存 buffer；完成后合并为一条，继续走完剩余中间件链
   //       （typingIndicator/quoteRef/attachmentProcessor/... 直到 bot.on("message")）
   //     - 合并时清除 assembledBody 让 dispatch.ts 用合并后 content 重建
@@ -94,10 +95,11 @@ export function setupMiddlewares(bot: QQBot, account: ResolvedQQBotAccount, opts
     strategy: 'merge',
     maxQueue: 50,
     maxProcessingMs: account.processingTimeoutMs,
-    /** 紧急指令和 ask_user 回答跳过排队，立即处理 */
+    /** 私聊消息、紧急指令和 ask_user 回答跳过插件队列，立即交给 OpenClaw */
     urgentPredicate: (ctx: MiddlewareContext) => {
       if ((ctx.message.content as string ?? '').trim() === '/stop') return true;
       const target = ctx.message.replyTarget;
+      if (target.scope === 'c2c') return true;
       return hasPendingQuestionTarget({
         accountId: account.accountId,
         scope: target.scope,
