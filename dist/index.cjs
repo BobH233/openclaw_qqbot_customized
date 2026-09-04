@@ -13428,6 +13428,20 @@ async function dispatchToOpenClaw(ctx, msg, account, runtime2, log4) {
   }
   const deliveredMediaUrls = /* @__PURE__ */ new Set();
   const deliveredTexts = /* @__PURE__ */ new Set();
+  const deliveredCommentaryTexts = /* @__PURE__ */ new Set();
+  const onItemEvent = streamingEnabled ? async (item) => {
+    const text = item.progressText?.trim() ?? "";
+    if (item.kind !== "preamble" || !text || deliveredCommentaryTexts.has(text)) return false;
+    const result = await deliverCtx.sendText(qualifiedTarget, text);
+    if (result.error) {
+      dlog?.error(`commentary delivery failed: ${result.error}`);
+      return false;
+    }
+    deliveredCommentaryTexts.add(text);
+    deliveredTexts.add(text);
+    dlog?.info(`commentary delivered chars=${text.length}`);
+    return true;
+  } : void 0;
   const trackQuestionPayload = (payload) => {
     registerPendingQuestionTarget({
       payload,
@@ -13455,6 +13469,9 @@ async function dispatchToOpenClaw(ctx, msg, account, runtime2, log4) {
         deliver: async (payload, info) => {
           trackQuestionPayload(payload);
           const text = payload.text?.trim() ?? "";
+          if (info?.kind === "tool" && text.startsWith("\u{1F4AC} ") && deliveredCommentaryTexts.has(text.slice("\u{1F4AC} ".length).trim())) {
+            return;
+          }
           if (!payload.mediaUrl && !payload.mediaUrls?.length && text && (deliveredTexts.has(text) || streamingController?.hasStarted && !streamingController?.shouldFallbackToStatic)) {
             return;
           }
@@ -13473,6 +13490,11 @@ async function dispatchToOpenClaw(ctx, msg, account, runtime2, log4) {
         abortSignal: ctx.signal,
         runId: envelope.messageId,
         disableBlockStreaming: !streamingEnabled,
+        commentaryPayloadsEnabled: streamingEnabled,
+        commentaryProgressEnabled: streamingEnabled,
+        progressPreambleEnabled: streamingEnabled,
+        suppressDefaultToolProgressMessages: streamingEnabled,
+        ...onItemEvent ? { onItemEvent } : {},
         ...streamingController ? {
           onPartialReply: async (p2) => {
             if (p2.text) await streamingController.onPartialReply(p2.text);
@@ -13527,6 +13549,9 @@ async function dispatchToOpenClaw(ctx, msg, account, runtime2, log4) {
                     const text = payload.text?.trim() ?? "";
                     const hasMedia = !!(payload.mediaUrl || payload.mediaUrls?.length);
                     dlog?.debug(`deliver kind=${kind ?? "none"} textLen=${text.length} voice=${!!payload.audioAsVoice} media=${hasMedia}`);
+                    if (kind === "tool" && text.startsWith("\u{1F4AC} ") && deliveredCommentaryTexts.has(text.slice("\u{1F4AC} ".length).trim())) {
+                      return;
+                    }
                     if (kind === "block") {
                       if (payload.audioAsVoice) {
                         await deliverReply(payload, info, deliverCtx);
@@ -13567,6 +13592,11 @@ async function dispatchToOpenClaw(ctx, msg, account, runtime2, log4) {
                 abortSignal: ctx.signal,
                 runId: envelope.messageId,
                 disableBlockStreaming: !streamingEnabled,
+                commentaryPayloadsEnabled: streamingEnabled,
+                commentaryProgressEnabled: streamingEnabled,
+                progressPreambleEnabled: streamingEnabled,
+                suppressDefaultToolProgressMessages: streamingEnabled,
+                ...onItemEvent ? { onItemEvent } : {},
                 ...streamingController ? {
                   onPartialReply: async (p2) => {
                     if (p2.text) await streamingController.onPartialReply(p2.text);

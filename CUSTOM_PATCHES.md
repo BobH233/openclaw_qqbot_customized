@@ -36,9 +36,10 @@ streaming conflicts.
 
 ### Intermediate assistant text in QQ direct messages
 
-Enabling QQ streaming now also enables OpenClaw core block streaming. Completed
-assistant text before tool calls is delivered immediately instead of being
-visible only in the Control UI while QQ receives just the final reply.
+Enabling QQ streaming now also enables OpenClaw core block streaming and its
+durable commentary lane. The plugin subscribes to `preamble` item events and
+sends each completed assistant commentary block immediately, without depending
+on the session's verbose level. Duplicate `💬` progress messages are suppressed.
 
 ## Verification
 

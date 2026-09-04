@@ -37,6 +37,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "test:commentary": "npm run build && node scripts/test-commentary-delivery.mjs",
     "typecheck": "tsc --noEmit",
     "lint:runtime": "npx tsx src/runtime-adapter/lint-runtime-access.ts"
   },

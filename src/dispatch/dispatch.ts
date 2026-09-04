@@ -121,6 +121,23 @@ export async function dispatchToOpenClaw(
 
   const deliveredMediaUrls = new Set<string>();
   const deliveredTexts = new Set<string>();
+  const deliveredCommentaryTexts = new Set<string>();
+  const onItemEvent = streamingEnabled
+    ? async (item: { kind?: string; progressText?: string }): Promise<boolean> => {
+        if (item.kind !== 'preamble') return false;
+        const text = item.progressText?.trim() ?? '';
+        if (!text || deliveredCommentaryTexts.has(text)) return false;
+        const result = await deliverCtx.sendText(qualifiedTarget, text);
+        if (result.error) {
+          dlog?.error(`commentary delivery failed: ${result.error}`);
+          return false;
+        }
+        deliveredCommentaryTexts.add(text);
+        deliveredTexts.add(text);
+        dlog?.info(`commentary delivered chars=${text.length}`);
+        return true;
+      }
+    : undefined;
   const trackQuestionPayload = (payload: DeliverPayload): void => {
     registerPendingQuestionTarget({
       payload,
@@ -149,6 +166,10 @@ export async function dispatchToOpenClaw(
         deliver: async (payload: DeliverPayload, info?: DeliverInfo) => {
           trackQuestionPayload(payload);
           const text = payload.text?.trim() ?? '';
+          if (info?.kind === 'tool' && text.startsWith('💬 ')
+            && deliveredCommentaryTexts.has(text.slice('💬 '.length).trim())) {
+            return;
+          }
           // 低版本无 block/final 协议，流式启动后 final 仍需跳过（降级除外）
           if (!payload.mediaUrl && !payload.mediaUrls?.length
             && text
@@ -176,6 +197,11 @@ export async function dispatchToOpenClaw(
         abortSignal: ctx.signal,
         runId: envelope.messageId,
         disableBlockStreaming: !streamingEnabled,
+        commentaryPayloadsEnabled: streamingEnabled,
+        commentaryProgressEnabled: streamingEnabled,
+        progressPreambleEnabled: streamingEnabled,
+        suppressDefaultToolProgressMessages: streamingEnabled,
+        ...(onItemEvent ? { onItemEvent } : {}),
         ...(streamingController
           ? {
               onPartialReply: async (p: { text?: string }) => {
@@ -233,6 +259,11 @@ export async function dispatchToOpenClaw(
                     const hasMedia = !!(payload.mediaUrl || payload.mediaUrls?.length);
                     dlog?.debug(`deliver kind=${kind ?? 'none'} textLen=${text.length} voice=${!!payload.audioAsVoice} media=${hasMedia}`);
 
+                    if (kind === 'tool' && text.startsWith('💬 ')
+                      && deliveredCommentaryTexts.has(text.slice('💬 '.length).trim())) {
+                      return;
+                    }
+
                     // ── 1. block: 媒体/语音立即发送，文本留给流式 ──
                     if (kind === 'block') {
                       if (payload.audioAsVoice) {
@@ -282,6 +313,11 @@ export async function dispatchToOpenClaw(
               abortSignal: ctx.signal,
               runId: envelope.messageId,
               disableBlockStreaming: !streamingEnabled,
+              commentaryPayloadsEnabled: streamingEnabled,
+              commentaryProgressEnabled: streamingEnabled,
+              progressPreambleEnabled: streamingEnabled,
+              suppressDefaultToolProgressMessages: streamingEnabled,
+              ...(onItemEvent ? { onItemEvent } : {}),
               ...(streamingController
                 ? {
                     onPartialReply: async (p: { text?: string }) => {
