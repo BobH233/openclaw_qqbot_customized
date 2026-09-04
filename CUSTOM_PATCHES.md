@@ -34,6 +34,12 @@ the configured `steer`, `followup`, or `interrupt` mode can handle it. Group
 messages keep the plugin's serial merge protection to avoid concurrent QQ
 streaming conflicts.
 
+### Intermediate assistant text in QQ direct messages
+
+Enabling QQ streaming now also enables OpenClaw core block streaming. Completed
+assistant text before tool calls is delivered immediately instead of being
+visible only in the Control UI while QQ receives just the final reply.
+
 ## Verification
 
 - A live QQ direct-message test resolved numeric choice `2`.

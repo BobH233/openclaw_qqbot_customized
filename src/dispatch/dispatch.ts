@@ -175,6 +175,7 @@ export async function dispatchToOpenClaw(
       replyOptions: {
         abortSignal: ctx.signal,
         runId: envelope.messageId,
+        disableBlockStreaming: !streamingEnabled,
         ...(streamingController
           ? {
               onPartialReply: async (p: { text?: string }) => {
@@ -280,6 +281,7 @@ export async function dispatchToOpenClaw(
             replyOptions: {
               abortSignal: ctx.signal,
               runId: envelope.messageId,
+              disableBlockStreaming: !streamingEnabled,
               ...(streamingController
                 ? {
                     onPartialReply: async (p: { text?: string }) => {

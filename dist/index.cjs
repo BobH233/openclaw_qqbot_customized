@@ -13472,6 +13472,7 @@ async function dispatchToOpenClaw(ctx, msg, account, runtime2, log4) {
       replyOptions: {
         abortSignal: ctx.signal,
         runId: envelope.messageId,
+        disableBlockStreaming: !streamingEnabled,
         ...streamingController ? {
           onPartialReply: async (p2) => {
             if (p2.text) await streamingController.onPartialReply(p2.text);
@@ -13565,6 +13566,7 @@ async function dispatchToOpenClaw(ctx, msg, account, runtime2, log4) {
               replyOptions: {
                 abortSignal: ctx.signal,
                 runId: envelope.messageId,
+                disableBlockStreaming: !streamingEnabled,
                 ...streamingController ? {
                   onPartialReply: async (p2) => {
                     if (p2.text) await streamingController.onPartialReply(p2.text);
